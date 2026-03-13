@@ -258,6 +258,10 @@ public class CoapRequestBuilder implements DownlinkDeviceManagementRequestVisito
     protected void setURI(Request coapRequest, LwM2mPath path) {
         // root path
         if (rootPath != null) {
+            // Gateway用にLwM2MデータモデルのURIにprefixを追加
+            if (path.isPrefix()) {
+                coapRequest.getOptions().addUriPath(path.getPrefix());
+            }
             for (String rootPathPart : rootPath.split("/")) {
                 if (!StringUtils.isEmpty(rootPathPart)) {
                     coapRequest.getOptions().addUriPath(rootPathPart);

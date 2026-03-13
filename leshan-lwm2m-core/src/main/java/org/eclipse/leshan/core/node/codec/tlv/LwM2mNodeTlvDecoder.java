@@ -319,6 +319,16 @@ public class LwM2mNodeTlvDecoder implements NodeDecoder {
     public Type getResourceType(LwM2mPath rscPath, LwM2mModel model) throws CodecException {
         ResourceModel rscDesc = model.getResourceModel(rscPath.getObjectId(), rscPath.getResourceId());
         if (rscDesc == null) {
+            // gateway用の処理，これがないと値のデコードが文字化けする
+            if (rscPath.getObjectId().equals(3301) || rscPath.getObjectId().equals(3303)
+                    || rscPath.getObjectId().equals(3304) || rscPath.getObjectId().equals(3315)
+                    || rscPath.getObjectId().equals(3433)) {
+                return Type.FLOAT;
+            }
+            // gateway用の処理，これがないと値のデコードが文字化けする
+            if (rscPath.getObjectId().equals(25)) {
+                return Type.STRING;
+            }
             LOG.trace("unknown type for resource : {}", rscPath);
             // no resource description... opaque
             return Type.OPAQUE;

@@ -125,4 +125,37 @@ public class DefaultCompositeClientEndpointsProvider implements CompositeClientE
     public Collection<LwM2mClientEndpointsProvider> getProviders() {
         return providers;
     }
+
+    // リソース追加
+    @Override
+    public void addObjectResourceforGatewayObject(LwM2mObjectTree objectTreeGateway,
+            DownlinkRequestReceiver requestReceiverGateway, NotificationManager notificationManager,
+            ClientEndpointToolbox toolbox, String prefix) {
+        // 各プロバイダーを順次試行し、実装済みのものを使用
+        for (LwM2mClientEndpointsProvider provider : providers) {
+            try {
+                provider.addObjectResourceforGatewayObject(objectTreeGateway, requestReceiverGateway,
+                        notificationManager, toolbox, prefix);
+                return; // 成功したら終了
+            } catch (UnsupportedOperationException e) {
+                // このプロバイダーでは未実装なので次のプロバイダーを試行
+                continue;
+            }
+        }
+    }
+
+    // リソース更新通知
+    @Override
+    public void notify(String prefix, String object) {
+        // 各プロバイダーを順次試行し、実装済みのものを使用
+        for (LwM2mClientEndpointsProvider provider : providers) {
+            try {
+                provider.notify(prefix, object);
+                return; // 成功したら終了
+            } catch (UnsupportedOperationException e) {
+                // このプロバイダーでは未実装なので次のプロバイダーを試行
+                continue;
+            }
+        }
+    }
 }

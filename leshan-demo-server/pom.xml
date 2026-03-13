@@ -28,7 +28,61 @@ Contributors:
   <name>Leshan demo server</name>
   <description>A LWM2M demonstration server running an embedded Jetty server</description>
 
+  <!-- https://github.com/aws/aws-sdk-java-v2/#using-the-sdk -->
+  <!-- https://search.maven.org/search?q=g:software.amazon.awssdk%20AND%20a:bom -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>2.26.6</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Force Netty version convergence to the higher version -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>4.1.118.Final</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Force Californium version convergence to the higher version -->
+      <dependency>
+        <groupId>org.eclipse.californium</groupId>
+        <artifactId>californium-legal</artifactId>
+        <version>4.0.0-M3</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+    <!-- https://docs.aws.amazon.com/code-samples/latest/catalog/javav2-route53-pom.xml.html -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>route53</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.13</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>apache-client</artifactId>
+      <version>2.26.6</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-base</artifactId>
+      <version>17.0.1</version>
+    </dependency>
     <dependency>
       <groupId>org.jmdns</groupId>
       <artifactId>jmdns</artifactId>

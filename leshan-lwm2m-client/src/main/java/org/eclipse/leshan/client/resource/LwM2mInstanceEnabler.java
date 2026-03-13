@@ -245,4 +245,19 @@ public interface LwM2mInstanceEnabler {
      * @param resourceId the ID of the resource to be reseted
      */
     void reset(int resourceId);
+
+    /**
+     * Used to manage legacy devices under the gateway. Used as the prefix in
+     * /prefix/objectID/ObjectInstanceID/ResourceID.
+     *
+     * @param prefix
+     */
+    void setPrefix(String prefix);
+
+    /**
+     * Function to overwrite values when notifying during value changes on legacy devices. *
+     *
+     * @param value
+     */
+    boolean setValue(String value);
 }

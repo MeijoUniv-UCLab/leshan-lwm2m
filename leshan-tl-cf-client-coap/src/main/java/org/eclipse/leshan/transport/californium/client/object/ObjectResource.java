@@ -134,6 +134,46 @@ public class ObjectResource extends LwM2mClientCoapResource implements ObjectLis
         });
     }
 
+    // LwM2MGatewayObject用のコンストラクタ
+    public ObjectResource(String prefix, IdentityHandlerProvider identityHandlerProvider,
+            ServerIdentityExtractor serverIdentityExtractor, DownlinkRequestReceiver requestReceiver,
+            NotificationManager notificationManager, ClientEndpointToolbox toolbox) {
+        super(prefix, identityHandlerProvider, serverIdentityExtractor);
+        this.requestReceiver = requestReceiver;
+        this.notificationManager = notificationManager;
+        this.toolbox = toolbox;
+        setObservable(true);
+
+        this.addObserver(new ResourceObserverAdapter() {
+
+            @Override
+            public void removedObserveRelation(ObserveRelation relation) {
+                // Get object URI
+                Request request = relation.getExchange().getRequest();
+                String URI = request.getOptions().getUriPathString();
+                // we don't manage observation on root path
+                if (URI == null)
+                    return;
+
+                // Get Server identity
+                LwM2mServer extractIdentity = extractIdentity(relation.getExchange(), request);
+
+                // handle content format for Read and Observe Request
+                ContentFormat requestedContentFormat = null;
+                if (request.getOptions().hasAccept()) {
+                    // If an request ask for a specific content format, use it (if we support it)
+                    requestedContentFormat = ContentFormat.fromCode(request.getOptions().getAccept());
+                }
+
+                // Create Observe request
+                ObserveRequest observeRequest = new ObserveRequest(requestedContentFormat, URI, request);
+
+                // Remove notification data for this request
+                notificationManager.clear(extractIdentity, observeRequest);
+            }
+        });
+    }
+
     @Override
     public void handleGET(CoapExchange exchange) {
         Request coapRequest = exchange.advanced().getRequest();

@@ -117,7 +117,29 @@ public class ObserveUtil {
                     regId = ctx.getValue();
                     break;
                 case CTX_LWM2M_PATH:
-                    lwm2mPaths = getPathsFromContext(request.getUserContext());
+                    // Gateway配下のレガシーデバイスの処理
+                    // dはLwM2M Gateway ObjectのPrefixの先頭につける文字である
+                    if (!request.getOptions().getUriPath().isEmpty()
+                            && request.getOptions().getUriPath().get(0).toString().contains("d")) {
+                        List<LwM2mPath> paths = new ArrayList<>();
+                        StringBuilder pathBuilder = new StringBuilder();
+
+                        for (Object segment : request.getOptions().getUriPath()) {
+                            String segmentStr = segment.toString();
+                            // Uri-Pathプレフィックスを除去
+                            if (segmentStr.startsWith("Uri-Path: \"") && segmentStr.endsWith("\"")) {
+                                segmentStr = segmentStr.substring(11, segmentStr.length() - 1);
+                            }
+                            pathBuilder.append("/").append(segmentStr);
+                        }
+
+                        String path = pathBuilder.toString();
+                        paths.add(new LwM2mPath(path));
+                        lwm2mPaths = paths;
+                    } else {
+                        // LwM2Mデバイスに対する処理
+                        lwm2mPaths = getPathsFromContext(request.getUserContext());
+                    }
                     break;
                 case CTX_ENDPOINT:
                     break;

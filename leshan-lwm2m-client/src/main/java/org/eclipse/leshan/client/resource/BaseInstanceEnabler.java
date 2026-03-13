@@ -49,6 +49,7 @@ public class BaseInstanceEnabler implements LwM2mInstanceEnabler {
     protected Integer id = null;
     protected ObjectModel model;
     protected LwM2mClient lwm2mClient;
+    protected String prefix = null;
 
     public BaseInstanceEnabler() {
     }
@@ -83,6 +84,15 @@ public class BaseInstanceEnabler implements LwM2mInstanceEnabler {
 
     public LwM2mClient getLwM2mClient() {
         return lwm2mClient;
+    }
+
+    @Override
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
+    }
+
+    public boolean setValue(String value) {
+        return false;
     }
 
     @Override

@@ -58,6 +58,7 @@ import org.eclipse.leshan.transport.californium.ExceptionTranslator;
 import org.eclipse.leshan.transport.californium.ObserveUtil;
 import org.eclipse.leshan.transport.californium.identity.IdentityHandler;
 import org.eclipse.leshan.transport.californium.identity.IdentityHandlerProvider;
+import org.eclipse.leshan.transport.californium.server.DeviceHandler;
 import org.eclipse.leshan.transport.californium.server.RootResource;
 import org.eclipse.leshan.transport.californium.server.endpoint.coap.CoapServerProtocolProvider;
 import org.slf4j.Logger;
@@ -77,6 +78,9 @@ public class CaliforniumServerEndpointsProvider implements LwM2mServerEndpointsP
     private final ServerCoapMessageTranslator messagetranslator = new ServerCoapMessageTranslator();
     private final List<CaliforniumServerEndpoint> endpoints;
     private CoapServer coapServer;
+
+    private DeviceHandler deviceHandler;
+    private final static String OBJECTNUMDEVICE = "3";
 
     public CaliforniumServerEndpointsProvider() {
         this(new Builder().generateDefaultValue());
@@ -104,6 +108,10 @@ public class CaliforniumServerEndpointsProvider implements LwM2mServerEndpointsP
                 return endpoint;
         }
         return null;
+    }
+
+    public void setDeviceHandler(DeviceHandler deviceHandler) {
+        this.deviceHandler = deviceHandler;
     }
 
     @Override
@@ -177,6 +185,16 @@ public class CaliforniumServerEndpointsProvider implements LwM2mServerEndpointsP
                     try {
                         AbstractLwM2mResponse response = messagetranslator.createObserveResponse(observation,
                                 coapResponse, toolbox, profile);
+
+                        // coapRequestがPrefixを含むレガシーデバイスに関するNotifyの場合，DDNSのための処理を実行
+                        if (deviceHandler != null && (coapRequest.getOptions().getUriPath().size() == 4)) {
+                            String objectNumber = coapRequest.getOptions().getUriPath().get(1).toString(); // オブジェクト番号を取得
+                            if (OBJECTNUMDEVICE.equals(objectNumber)) {
+                                String prefix = coapRequest.getOptions().getUriPath().get(0).toString();
+                                deviceHandler.update(response, prefix);
+                            }
+                        }
+
                         if (observation instanceof SingleObservation) {
                             notificatonReceiver.onNotification((SingleObservation) observation, client, profile,
                                     (ObserveResponse) response);

@@ -36,25 +36,31 @@ import org.eclipse.leshan.core.observation.CompositeObservation;
 import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.core.observation.SingleObservation;
 import org.eclipse.leshan.core.request.SendRequest;
+import org.eclipse.leshan.core.response.LwM2mResponse;
 import org.eclipse.leshan.core.response.ObserveCompositeResponse;
 import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.demo.server.servlet.json.JacksonLinkSerializer;
+import org.eclipse.leshan.demo.server.servlet.json.JacksonLwM2mNodeDeserializer;
 import org.eclipse.leshan.demo.server.servlet.json.JacksonLwM2mNodeSerializer;
 import org.eclipse.leshan.demo.server.servlet.json.JacksonRegistrationSerializer;
 import org.eclipse.leshan.demo.server.servlet.json.JacksonRegistrationUpdateSerializer;
+import org.eclipse.leshan.demo.server.servlet.json.JacksonResponseSerializer;
 import org.eclipse.leshan.demo.server.servlet.json.JacksonVersionSerializer;
 import org.eclipse.leshan.demo.server.servlet.log.CoapMessage;
 import org.eclipse.leshan.demo.server.servlet.log.CoapMessageListener;
 import org.eclipse.leshan.demo.server.servlet.log.CoapMessageTracer;
 import org.eclipse.leshan.server.LeshanServer;
 import org.eclipse.leshan.server.endpoint.LwM2mServerEndpoint;
+import org.eclipse.leshan.server.endpoint.LwM2mServerEndpointsProvider;
 import org.eclipse.leshan.server.observation.ObservationListener;
 import org.eclipse.leshan.server.queue.PresenceListener;
 import org.eclipse.leshan.server.registration.Registration;
 import org.eclipse.leshan.server.registration.RegistrationListener;
 import org.eclipse.leshan.server.registration.RegistrationUpdate;
 import org.eclipse.leshan.server.send.SendListener;
+import org.eclipse.leshan.transport.californium.server.DeviceHandler;
 import org.eclipse.leshan.transport.californium.server.endpoint.CaliforniumServerEndpoint;
+import org.eclipse.leshan.transport.californium.server.endpoint.CaliforniumServerEndpointsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +95,11 @@ public class EventServlet extends EventSourceServlet {
     private final transient CoapMessageTracer coapMessageTracer;
     private final transient Set<LeshanEventSource> eventSources = Collections
             .newSetFromMap(new ConcurrentHashMap<LeshanEventSource, Boolean>());
+
+    private LeshanServer server;
+    private DeviceHandler deviceHandler;
+    private CaliforniumServerEndpointsProvider endpointsProvider;
+
     private final transient RegistrationListener registrationListener = new RegistrationListener() {
 
         @Override
@@ -101,6 +112,23 @@ public class EventServlet extends EventSourceServlet {
                 throw new IllegalStateException(e);
             }
             sendEvent(EVENT_REGISTRATION, jReg, registration.getEndpoint());
+
+            // レガシーデバイスを処理するためのインスタンスを生成
+            if (endpointsProvider == null) {
+                // Collection から最初のプロバイダーを取得
+                Collection<LwM2mServerEndpointsProvider> providers = server.getEndpointsProvider();
+                if (!providers.isEmpty()) {
+                    LwM2mServerEndpointsProvider provider = providers.iterator().next();
+                    endpointsProvider = (CaliforniumServerEndpointsProvider) provider;
+                }
+            }
+            if (deviceHandler == null) {
+                deviceHandler = new DeviceHandler(mapper, server);
+                // レガシーデバイスの変更（Notify）を受け取り，処理するための準備
+                endpointsProvider.setDeviceHandler(deviceHandler);
+            }
+            // LwM2Mデバイスの登録処理
+            deviceHandler.process(registration, "registered", false);
         }
 
         @Override
@@ -116,6 +144,13 @@ public class EventServlet extends EventSourceServlet {
                 throw new IllegalStateException(e);
             }
             sendEvent(EVENT_UPDATED, jReg, updatedRegistration.getEndpoint());
+
+            // レガシーデバイスの更新処理
+            Boolean changeObjectLinks = false;
+            if (update.getObjectLinks() != null) {
+                changeObjectLinks = true;
+            }
+            deviceHandler.process(updatedRegistration, "updated", changeObjectLinks);
         }
 
         @Override
@@ -301,8 +336,11 @@ public class EventServlet extends EventSourceServlet {
         module.addSerializer(RegistrationUpdate.class, new JacksonRegistrationUpdateSerializer());
         module.addSerializer(LwM2mNode.class, new JacksonLwM2mNodeSerializer());
         module.addSerializer(Version.class, new JacksonVersionSerializer());
+        module.addSerializer(LwM2mResponse.class, new JacksonResponseSerializer());
+        module.addDeserializer(LwM2mNode.class, new JacksonLwM2mNodeDeserializer());
         objectMapper.registerModule(module);
         this.mapper = objectMapper;
+        this.server = server;
     }
 
     public synchronized void sendEvent(String event, String data, String endpoint) {

@@ -57,6 +57,31 @@ public class ObservationSerDes {
     public String serialize(Observation obs) {
         ObjectNode o = JsonNodeFactory.instance.objectNode();
 
+        // Prefix（dから始まる）がつくGateway配下のレガシーデバイスに対する処理
+        if (!obs.getRequest().getOptions().getUriPath().isEmpty()
+                && obs.getRequest().getOptions().getUriPath().get(0).toString().contains("d")) {
+            o.put("request", Hex.encodeHexString(serializer.serializeRequest(obs.getRequest()).getBytes()));
+            if (obs.getContext() != null)
+                o.set("peer", EndpointContextSerDes.serialize(obs.getContext()));
+            else
+                o.set("peer", EndpointContextSerDes.serialize(obs.getRequest().getDestinationContext()));
+
+            if (obs.getRequest().getUserContext() != null) {
+                ObjectNode ctxObject = JsonNodeFactory.instance.objectNode();
+                for (Entry<String, String> e : obs.getRequest().getUserContext().entrySet()) {
+                    if (e.getKey().equals("leshan-path")) {
+                        ctxObject.put(e.getKey(),
+                                "/" + obs.getRequest().getOptions().getUriPath().get(0) + e.getValue());
+                    } else {
+                        ctxObject.put(e.getKey(), e.getValue());
+                    }
+                }
+                o.set("context", ctxObject);
+            }
+            return o.toString();
+        }
+
+        // LwM2Mデバイスに対する処理
         o.put("request", Hex.encodeHexString(serializer.serializeRequest(obs.getRequest()).getBytes()));
         if (obs.getContext() != null)
             o.set("peer", EndpointContextSerDes.serialize(obs.getContext()));

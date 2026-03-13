@@ -46,20 +46,41 @@ public class MyDevice extends BaseInstanceEnabler implements Destroyable {
     private static final Logger LOG = LoggerFactory.getLogger(MyDevice.class);
 
     private static final Random RANDOM = new Random();
-    private static final List<Integer> supportedResources = Arrays.asList(0, 1, 2, 3, 9, 10, 11, 13, 14, 15, 16, 17, 18,
-            19, 20, 21);
+    private static final List<Integer> supportedResources = Arrays.asList(0, 1, 2, 13, 16, 17, 23, 24, 25, 26, 27);
 
-    private final Timer timer;
+    // private final Timer timer;
+    private String manufacturer;
+    private String modelNumber;
+    private String serialNumber;
+    private String deviceType;
+    private String location1;
+    private String location2;
+    private String location3;
+    private String uri;
+    private String managerID;
 
     public MyDevice() {
         // notify new date each 5 second
-        this.timer = new Timer("Device-Current Time");
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                fireResourceChange(13);
-            }
-        }, 5000, 5000);
+        // this.timer = new Timer("Device-Current Time");
+        // timer.schedule(new TimerTask() {
+        // @Override
+        // public void run() {
+        // fireResourceChange(13);
+        // }
+        // }, 5000, 5000);
+    }
+
+    public MyDevice(String manufacturer, String modelNumber, String serialNumber, String deviceType, String location1,
+            String location2, String location3, String uri, String managerID) {
+        this.manufacturer = manufacturer;
+        this.modelNumber = modelNumber;
+        this.serialNumber = serialNumber;
+        this.deviceType = deviceType;
+        this.location1 = location1;
+        this.location2 = location2;
+        this.location3 = location3;
+        this.uri = uri;
+        this.managerID = managerID;
     }
 
     @Override
@@ -101,6 +122,16 @@ public class MyDevice extends BaseInstanceEnabler implements Destroyable {
             return ReadResponse.success(resourceid, getBatteryStatus());
         case 21:
             return ReadResponse.success(resourceid, getMemoryTotal());
+        case 23:
+            return ReadResponse.success(resourceid, getLocation1());
+        case 24:
+            return ReadResponse.success(resourceid, getLocation2());
+        case 25:
+            return ReadResponse.success(resourceid, getLocation3());
+        case 26:
+            return ReadResponse.success(resourceid, getUri());
+        case 27:
+            return ReadResponse.success(resourceid, getManagerID());
         default:
             return super.read(server, resourceid);
         }
@@ -145,21 +176,41 @@ public class MyDevice extends BaseInstanceEnabler implements Destroyable {
             setTimezone((String) value.getValue());
             fireResourceChange(resourceid);
             return WriteResponse.success();
+        case 17:
+            deviceType = (String) value.getValue();
+            fireResourceChange(resourceid);
+            return WriteResponse.success();
+        case 23:
+            location1 = (String) value.getValue();
+            fireResourceChange(resourceid);
+            return WriteResponse.success();
+        case 24:
+            location2 = (String) value.getValue();
+            fireResourceChange(resourceid);
+            return WriteResponse.success();
+        case 25:
+            location3 = (String) value.getValue();
+            fireResourceChange(resourceid);
+            return WriteResponse.success();
+        case 26:
+            WriteResponse writeResponse = setUri((String) value.getValue());
+            fireResourceChange(resourceid);
+            return writeResponse;
         default:
             return super.write(server, replace, resourceid, value);
         }
     }
 
     protected String getManufacturer() {
-        return "Leshan Demo Device";
+        return manufacturer;
     }
 
     protected String getModelNumber() {
-        return "Model 500";
+        return modelNumber;
     }
 
     protected String getSerialNumber() {
-        return "LT-500-000-0001";
+        return serialNumber;
     }
 
     protected String getFirmwareVersion() {
@@ -207,7 +258,7 @@ public class MyDevice extends BaseInstanceEnabler implements Destroyable {
     }
 
     protected String getDeviceType() {
-        return "Demo";
+        return deviceType;
     }
 
     protected String getHardwareVersion() {
@@ -226,6 +277,50 @@ public class MyDevice extends BaseInstanceEnabler implements Destroyable {
         return Runtime.getRuntime().totalMemory() / 1024;
     }
 
+    protected String getLocation1() {
+        return location1;
+    }
+
+    protected String getLocation2() {
+        return location2;
+    }
+
+    protected String getLocation3() {
+        return location3;
+    }
+
+    protected String getUri() {
+        return uri;
+    }
+
+    protected String getManagerID() {
+        return managerID;
+    }
+
+    // DDNS時のNotify用のURIの書き換え
+    @Override
+    public boolean setValue(String value) {
+        if (!value.equals(uri)) {
+            this.uri = value;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public ObjectModel getModel() {
+        return this.model;
+    }
+
+    // Notify用のURIの書き換え
+    protected WriteResponse setUri(String value) {
+        if (!value.equals(uri)) {
+            uri = value;
+            return WriteResponse.success();
+        }
+        return WriteResponse.badRequest("URI same, not updated.");
+    }
+
     @Override
     public List<Integer> getAvailableResourceIds(ObjectModel model) {
         return supportedResources;
@@ -233,6 +328,6 @@ public class MyDevice extends BaseInstanceEnabler implements Destroyable {
 
     @Override
     public void destroy() {
-        timer.cancel();
+        // timer.cancel();
     }
 }

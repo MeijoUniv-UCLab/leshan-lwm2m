@@ -33,6 +33,7 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
     public static final byte RESOURCE_DEPTH = 4;
     public static final byte RESOURCE_INSTANCE_DEPTH = 5;
 
+    private final String prefix;
     private final Integer objectId;
     private final Integer objectInstanceId;
     private final Integer resourceId;
@@ -119,10 +120,21 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
             throw new InvalidLwM2mPathException("Invalid length for path %s", path);
         }
         try {
-            this.objectId = (p.length >= 1 && !p[0].isEmpty()) ? Integer.valueOf(p[0]) : null;
-            this.objectInstanceId = (p.length >= 2) ? Integer.valueOf(p[1]) : null;
-            this.resourceId = (p.length >= 3) ? Integer.valueOf(p[2]) : null;
-            this.resourceInstanceId = (p.length == 4) ? Integer.valueOf(p[3]) : null;
+            // Prefixを使用する場合のPath
+            if (p[0].matches(".*[a-zA-Z].*")) {
+                this.prefix = (p.length >= 1 && !p[0].isEmpty()) ? p[0] : null;
+                this.objectId = (p.length >= 2) ? Integer.valueOf(p[1]) : null;
+                this.objectInstanceId = (p.length >= 3) ? Integer.valueOf(p[2]) : null;
+                this.resourceId = (p.length >= 4) ? Integer.valueOf(p[3]) : null;
+                this.resourceInstanceId = (p.length == 5) ? Integer.valueOf(p[4]) : null;
+            } else {
+                // Prefixを使用しない場合のPath
+                this.objectId = (p.length >= 1 && !p[0].isEmpty()) ? Integer.valueOf(p[0]) : null;
+                this.objectInstanceId = (p.length >= 2) ? Integer.valueOf(p[1]) : null;
+                this.resourceId = (p.length >= 3) ? Integer.valueOf(p[2]) : null;
+                this.resourceInstanceId = (p.length == 4) ? Integer.valueOf(p[3]) : null;
+                this.prefix = null;
+            }
             validate();
         } catch (NumberFormatException e) {
             throw new InvalidLwM2mPathException(e, "Invalid elements in path %s", path);
@@ -134,6 +146,7 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
         this.objectInstanceId = objectInstanceId;
         this.resourceId = resourceId;
         this.resourceInstanceId = resourceInstanceId;
+        this.prefix = null;
     }
 
     /**
@@ -248,6 +261,10 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
         return resourceInstanceId;
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
     /**
      * @return <code>true</code> if this is the root path ("/").
      */
@@ -281,6 +298,11 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
      */
     public boolean isResourceInstance() {
         return objectId != null && objectInstanceId != null && resourceId != null && resourceInstanceId != null;
+    }
+
+    // prefixがある場合の確認
+    public boolean isPrefix() {
+        return prefix != null;
     }
 
     /**
@@ -484,7 +506,7 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
         if (!(o instanceof LwM2mPath))
             return false;
         LwM2mPath that = (LwM2mPath) o;
-        return that.canEqual(this) && Objects.equals(objectId, that.objectId)
+        return that.canEqual(this) && Objects.equals(prefix, that.prefix) && Objects.equals(objectId, that.objectId)
                 && Objects.equals(objectInstanceId, that.objectInstanceId)
                 && Objects.equals(resourceId, that.resourceId)
                 && Objects.equals(resourceInstanceId, that.resourceInstanceId);
@@ -496,6 +518,6 @@ public class LwM2mPath implements Comparable<LwM2mPath> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(objectId, objectInstanceId, resourceId, resourceInstanceId);
+        return Objects.hash(prefix, objectId, objectInstanceId, resourceId, resourceInstanceId);
     }
 }

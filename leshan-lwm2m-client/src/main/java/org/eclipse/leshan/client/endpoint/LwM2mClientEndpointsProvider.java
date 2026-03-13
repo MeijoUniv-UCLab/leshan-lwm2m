@@ -48,4 +48,9 @@ public interface LwM2mClientEndpointsProvider {
 
     void destroy();
 
+    void addObjectResourceforGatewayObject(LwM2mObjectTree objectTreeGateway,
+            DownlinkRequestReceiver requestReceiverGateway, NotificationManager notificationManager,
+            ClientEndpointToolbox toolbox, String prefix);
+
+    void notify(String prefix, String object);
 }

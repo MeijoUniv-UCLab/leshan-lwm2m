@@ -304,6 +304,16 @@ Contributors:
         <artifactId>scandium</artifactId>
         <version>${californium.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.californium</groupId>
+        <artifactId>californium-legal</artifactId>
+        <version>${californium.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.californium</groupId>
+        <artifactId>cf-oscore</artifactId>
+        <version>${californium.version}</version>
+      </dependency>
       <!-- java-coap -->
       <dependency>
         <groupId>io.github.open-coap</groupId>
@@ -314,6 +324,46 @@ Contributors:
         <groupId>io.github.open-coap</groupId>
         <artifactId>coap-tcp</artifactId>
         <version>${javacoap.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-common</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-buffer</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http2</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-resolver</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-unix-common</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-classes-epoll</artifactId>
+        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -647,7 +697,11 @@ Contributors:
         <artifactId>maven-enforcer-plugin</artifactId>
         <configuration>
           <rules>
-            <requireUpperBoundDeps></requireUpperBoundDeps>
+            <requireUpperBoundDeps>
+              <excludes>
+                <exclude>org.eclipse.californium:californium-legal</exclude>
+              </excludes>
+            </requireUpperBoundDeps>
             <dependencyConvergence></dependencyConvergence>
             <requireJavaVersion>
               <version>17</version>

@@ -17,18 +17,18 @@
 package org.eclipse.leshan.client;
 
 import java.security.cert.Certificate;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.leshan.client.bootstrap.BootstrapConsistencyChecker;
 import org.eclipse.leshan.client.bootstrap.BootstrapHandler;
 import org.eclipse.leshan.client.endpoint.ClientEndpointToolbox;
+import org.eclipse.leshan.client.endpoint.CompositeClientEndpointsProvider;
 import org.eclipse.leshan.client.endpoint.DefaultEndpointsManager;
 import org.eclipse.leshan.client.endpoint.LwM2mClientEndpoint;
 import org.eclipse.leshan.client.endpoint.LwM2mClientEndpointsProvider;
@@ -56,6 +56,7 @@ import org.eclipse.leshan.client.send.SendService;
 import org.eclipse.leshan.client.servers.LwM2mServer;
 import org.eclipse.leshan.client.servers.ServersInfoExtractor;
 import org.eclipse.leshan.client.util.LinkFormatHelper;
+import org.eclipse.leshan.core.LwM2m.LwM2mVersion;
 import org.eclipse.leshan.core.endpoint.EndPointUriHandler;
 import org.eclipse.leshan.core.link.LinkSerializer;
 import org.eclipse.leshan.core.link.lwm2m.attributes.LwM2mAttributeParser;
@@ -92,6 +93,11 @@ public class LeshanClient implements LwM2mClient {
     private final DataSenderManager dataSenderManager;
     private final NotificationManager notificationManager;
 
+    // 下記３つをレガシーデバイスの情報を扱うオブジェクトを作成するために使用
+    private ClientEndpointToolbox toolbox;
+    private DownlinkRequestReceiver requestReceiver;
+    private ConcurrentHashMap<String, LwM2mObjectTree> objectTreesforGatewayObject;
+
     public LeshanClient(ClientEndpointNameProvider endpointNameProvider,
             List<? extends LwM2mObjectEnabler> objectEnablers, List<DataSender> dataSenders,
             List<Certificate> trustStore, RegistrationEngineFactory engineFactory, BootstrapConsistencyChecker checker,
@@ -116,8 +122,10 @@ public class LeshanClient implements LwM2mClient {
         observers = createClientObserverDispatcher();
         bootstrapHandler = createBoostrapHandler(objectTree, checker, linkFormatHelper);
 
-        ClientEndpointToolbox toolbox = new ClientEndpointToolbox(decoder, encoder, linkSerializer,
-                objectTree.getModel(), attributeParser, uriHandler);
+        // ClientEndpointToolbox toolbox = new ClientEndpointToolbox(decoder, encoder, linkSerializer,
+        // objectTree.getModel(), attributeParser, uriHandler);
+        toolbox = new ClientEndpointToolbox(decoder, encoder, linkSerializer, objectTree.getModel(), attributeParser,
+                uriHandler);
         endpointsManager = createEndpointsManager(this.endpointsProvider, toolbox, trustStore);
         requestSender = createRequestSender(this.endpointsProvider);
         dataSenderManager = createDataSenderManager(dataSenders, rootEnabler, requestSender);
@@ -132,6 +140,9 @@ public class LeshanClient implements LwM2mClient {
 
         notificationManager = createNotificationManager(objectTree, requestReceiver, sharedExecutor);
         endpointsProvider.init(objectTree, requestReceiver, notificationManager, toolbox);
+
+        this.requestReceiver = requestReceiver;
+        objectTreesforGatewayObject = new ConcurrentHashMap<>();
     }
 
     protected NotificationManager createNotificationManager(LwM2mObjectTree objectTree,
@@ -209,6 +220,43 @@ public class LeshanClient implements LwM2mClient {
                 linkFormatHelper);
         registrationUpdateHandler.listen(objectTree);
         return registrationUpdateHandler;
+    }
+
+    public void createObjectTreeforGatewayObject(List<? extends LwM2mObjectEnabler> objectEnablers, String prefix) {
+        LwM2mObjectTree objectTreeGateway = new LwM2mObjectTree(
+                objectEnabler -> objectEnabler.init(this, new LinkFormatHelper(LwM2mVersion.V1_1)), objectEnablers);
+        // レガシーデバイスごとに1つのObjectTreeで管理し、複数のレガシーデバイスではそれぞれ異なるObjectTreeで管理する．．
+        // それらのObjectTreeを一括管理するobjectTreesforGatewayObjectに，デバイスごとに対応するPrefixと一緒に格納する．
+        objectTreesforGatewayObject.put(prefix, objectTreeGateway);
+        requestReceiver.setObjectTreeforGatewayObject(objectTreeGateway, prefix);
+
+        // CompositeClientEndpointsProviderの場合、個々のプロバイダーを試行してUnsupportedOperationExceptionを回避
+        if (endpointsProvider instanceof CompositeClientEndpointsProvider) {
+            CompositeClientEndpointsProvider compositeProvider = (CompositeClientEndpointsProvider) endpointsProvider;
+            // CompositeClientEndpointsProvider内の各プロバイダーを試行
+            for (LwM2mClientEndpointsProvider provider : compositeProvider.getProviders()) {
+                try {
+                    provider.addObjectResourceforGatewayObject(objectTreeGateway, requestReceiver, notificationManager,
+                            toolbox, prefix);
+                    return; // 成功したら終了
+                } catch (UnsupportedOperationException e) {
+                    // このプロバイダーでは未実装なので次のプロバイダーを試行
+                    continue;
+                }
+            }
+            // すべてのプロバイダーが未実装の場合はログを出力
+            LOG.warn("All providers in composite endpoint provider do not support addObjectResourceforGatewayObject");
+            return;
+        }
+
+        // 通常のケース
+        try {
+            endpointsProvider.addObjectResourceforGatewayObject(objectTreeGateway, requestReceiver, notificationManager,
+                    toolbox, prefix);
+        } catch (UnsupportedOperationException e) {
+            LOG.warn("Current endpoint provider does not support addObjectResourceforGatewayObject: {}",
+                    e.getMessage());
+        }
     }
 
     protected Set<ContentFormat> getSupportedContentFormat(LwM2mDecoder decoder, LwM2mEncoder encoder) {
@@ -345,13 +393,21 @@ public class LeshanClient implements LwM2mClient {
         return engine.getRegisteredServers();
     }
 
-    public Collection<LwM2mClientEndpointsProvider> getEndpointsProvider() {
-        // TODO current we support only 1 endpoints provider but we will add support for multiple endpoints provider
-        // soon
-        return Arrays.asList(endpointsProvider);
+    public LwM2mClientEndpointsProvider getEndpointsProvider() {
+        return endpointsProvider;
     }
 
     public LwM2mClientEndpoint getEndpoint(LwM2mServer server) {
         return endpointsProvider.getEndpoint(server);
+    }
+
+    // prefixと一致するレガシーデバイスのオブジェクトツリーを検索する
+    public LwM2mObjectTree searchByPrefix(String prefix) {
+        for (Map.Entry<String, LwM2mObjectTree> entry : objectTreesforGatewayObject.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 }

@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.eclipse.leshan.client.request;
 
+import org.eclipse.leshan.client.resource.LwM2mObjectTree;
 import org.eclipse.leshan.client.servers.LwM2mServer;
 import org.eclipse.leshan.core.request.DownlinkRequest;
 import org.eclipse.leshan.core.response.LwM2mResponse;
@@ -26,4 +27,7 @@ public interface DownlinkRequestReceiver {
 
     void onError(LwM2mServer server, Exception e,
             Class<? extends DownlinkRequest<? extends LwM2mResponse>> requestType);
+
+    // Gatewayで管理するレガシーデバイスのobjectを管理するobjectTreeをobjectTreesforGatewayObectにセット
+    void setObjectTreeforGatewayObject(LwM2mObjectTree objectTreeGateway, String prefix);
 }

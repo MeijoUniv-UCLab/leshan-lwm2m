@@ -51,6 +51,37 @@ public abstract class BaseInstanceEnablerFactory implements LwM2mInstanceEnabler
         return instance;
     }
 
+    // Prefixを用いるレガシーデバイス用のLwM2mInstanceEnablerを作成
+    @Override
+    public LwM2mInstanceEnabler create(ObjectModel model, Integer id, String prefix,
+            Collection<Integer> alreadyUsedIdentifier) {
+        // generate a new id if needed
+        if (id == null) {
+            id = getNewInstanceId(alreadyUsedIdentifier);
+        }
+
+        // create new instance
+        LwM2mInstanceEnabler instance = create();
+
+        // set id if not already done
+        if (instance.getId() == null) {
+            instance.setId(id);
+            // Prefixの設定
+            instance.setPrefix(prefix);
+        } else {
+            // check id is well set
+            if (instance.getId() != id) {
+                throw new IllegalStateException(
+                        String.format("instance id should be %d but was %d", id, instance.getId()));
+            }
+        }
+
+        // set model
+        instance.setModel(model);
+
+        return instance;
+    }
+
     /**
      * generate a new valid instance id
      *

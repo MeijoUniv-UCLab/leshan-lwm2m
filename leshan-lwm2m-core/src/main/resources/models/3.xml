@@ -325,6 +325,51 @@ Status	Meaning	Description
 				<RangeEnumeration></RangeEnumeration>
 				<Units></Units>
 				<Description><![CDATA[Reference to external "Device" object instance containing information. For example, such an external device can be a Host Device, which is a device into which the Device containing the LwM2M client is embedded. This Resource may be used to retrieve information about the Host Device.]]></Description>
+      </Item>
+      <Item ID="23"><Name>Location1</Name>
+        <Operations>RW</Operations>
+        <MultipleInstances>Single</MultipleInstances>
+        <Mandatory>Optional</Mandatory>
+        <Type>String</Type>
+        <RangeEnumeration></RangeEnumeration>
+        <Units></Units>
+        <Description></Description>
+      </Item>
+      <Item ID="24"><Name>Location2</Name>
+          <Operations>RW</Operations>
+          <MultipleInstances>Single</MultipleInstances>
+          <Mandatory>Optional</Mandatory>
+          <Type>String</Type>
+          <RangeEnumeration></RangeEnumeration>
+          <Units></Units>
+          <Description></Description>
+      </Item>
+      <Item ID="25"><Name>Location3</Name>
+          <Operations>RW</Operations>
+          <MultipleInstances>Single</MultipleInstances>
+          <Mandatory>Optional</Mandatory>
+          <Type>String</Type>
+          <RangeEnumeration></RangeEnumeration>
+          <Units></Units>
+          <Description></Description>
+      </Item>
+      <Item ID="26"><Name>URI</Name>
+          <Operations>RW</Operations>
+          <MultipleInstances>Single</MultipleInstances>
+          <Mandatory>Optional</Mandatory>
+          <Type>String</Type>
+          <RangeEnumeration></RangeEnumeration>
+          <Units></Units>
+          <Description></Description>
+      </Item>
+      <Item ID="27"><Name>ManagerID</Name>
+          <Operations>RW</Operations>
+          <MultipleInstances>Single</MultipleInstances>
+          <Mandatory>Optional</Mandatory>
+          <Type>String</Type>
+          <RangeEnumeration></RangeEnumeration>
+          <Units></Units>
+          <Description></Description>
 			</Item></Resources>
 			<Description2></Description2>
 	</Object>

@@ -31,6 +31,10 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.eclipse.leshan.client.endpoint.ClientEndpointToolbox;
+import org.eclipse.leshan.client.notification.NotificationManager;
+import org.eclipse.leshan.client.request.DownlinkRequestReceiver;
+import org.eclipse.leshan.client.resource.LwM2mObjectTree;
 import org.eclipse.leshan.client.security.CertificateVerifierFactory;
 import org.eclipse.leshan.client.servers.ServerInfo;
 import org.eclipse.leshan.core.endpoint.Protocol;
@@ -130,5 +134,15 @@ public class JavaCoapsTcpClientEndpointsProvider extends AbstractJavaCoapClientE
                 .with(TlsTransportContextKeys.PRINCIPAL, principal) //
                 .with(TlsTransportContextKeys.CIPHER_SUITE, cipherSuite);
 
+    }
+
+    @Override
+    public void addObjectResourceforGatewayObject(LwM2mObjectTree objectTreeGateway,
+            DownlinkRequestReceiver requestReceiverGateway, NotificationManager notificationManager,
+            ClientEndpointToolbox toolbox, String prefix) {
+    }
+
+    @Override
+    public void notify(String prefix, String object) {
     }
 }

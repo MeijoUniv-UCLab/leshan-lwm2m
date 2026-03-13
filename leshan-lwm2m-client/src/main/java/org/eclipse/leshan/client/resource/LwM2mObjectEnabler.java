@@ -118,4 +118,6 @@ public interface LwM2mObjectEnabler {
     ContentFormat getDefaultEncodingFormat(DownlinkRequest<?> request);
 
     NotificationAttributeTree getAttributesFor(LwM2mServer server);
+
+    LwM2mInstanceEnabler getInstance(int instanceId);
 }

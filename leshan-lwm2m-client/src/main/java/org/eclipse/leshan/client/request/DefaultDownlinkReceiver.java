@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.leshan.client.request;
 
+import java.util.HashMap;
+
 import org.eclipse.leshan.client.bootstrap.BootstrapHandler;
 import org.eclipse.leshan.client.engine.RegistrationEngine;
 import org.eclipse.leshan.client.resource.LwM2mObjectEnabler;
@@ -71,6 +73,8 @@ public class DefaultDownlinkReceiver implements DownlinkRequestReceiver {
     private final BootstrapHandler bootstrapHandler;
     private final LwM2mRootEnabler rootEnabler;
     private final LwM2mObjectTree objectTree;
+    // Gatewayで管理するIoTデバイスごとのObjectTreeをPrefixとともに管理
+    private HashMap<String, LwM2mObjectTree> objectTreesforGatewayObect;
 
     public DefaultDownlinkReceiver(BootstrapHandler bootstrapHandler, LwM2mRootEnabler rootEnabler,
             LwM2mObjectTree objectTree, RegistrationEngine registrationEngine) {
@@ -78,6 +82,7 @@ public class DefaultDownlinkReceiver implements DownlinkRequestReceiver {
         this.rootEnabler = rootEnabler;
         this.objectTree = objectTree;
         this.registrationEngine = registrationEngine;
+        objectTreesforGatewayObect = new HashMap<String, LwM2mObjectTree>();
     }
 
     @Override
@@ -100,6 +105,12 @@ public class DefaultDownlinkReceiver implements DownlinkRequestReceiver {
     @Override
     public void onError(LwM2mServer server, Exception e,
             Class<? extends DownlinkRequest<? extends LwM2mResponse>> requestType) {
+    }
+
+    // gatewayで管理するIoTデバイスのobjectTreeをobjectTreesforGatewayObectにセット
+    @Override
+    public void setObjectTreeforGatewayObject(LwM2mObjectTree objectTreeGateway, String prefix) {
+        objectTreesforGatewayObect.put(prefix, objectTreeGateway);
     }
 
     public class RequestHandler<T extends LwM2mResponse> implements DownlinkRequestVisitor {
@@ -293,7 +304,14 @@ public class DefaultDownlinkReceiver implements DownlinkRequestReceiver {
         private LwM2mObjectEnabler getObjectEnabler(SimpleDownlinkRequest<?> request) {
             // TODO TL : handle path has no object id
             LwM2mPath path = request.getPath();
-            return objectTree.getObjectEnabler(path.getObjectId());
+            // Gatewayで管理するレガシーデバイスのObjectEnablerを取り扱う場合
+            if (path.isPrefix()) {
+                String prefix = path.getPrefix();
+                return objectTreesforGatewayObect.get(prefix).getObjectEnabler(path.getObjectId());
+            } else {
+                // LwM2MクライアントのObjectEnablerを取り扱う場合
+                return objectTree.getObjectEnabler(path.getObjectId());
+            }
         }
 
         @SuppressWarnings("unchecked")

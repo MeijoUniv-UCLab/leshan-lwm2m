@@ -271,7 +271,16 @@ public class InMemoryRegistrationStore implements RegistrationStore, Startable, 
 
     private boolean areTheSamePaths(Observation observation, Observation obs) {
         if (observation instanceof SingleObservation && obs instanceof SingleObservation) {
-            return ((SingleObservation) observation).getPath().equals(((SingleObservation) obs).getPath());
+            // Gateqway配下のレガシーデバイスに対する処理
+            if (((SingleObservation) observation).getPath().isPrefix()) {
+                if (((SingleObservation) observation).getPath().getPrefix()
+                        .equals(((SingleObservation) obs).getPath().getPrefix())) {
+                    return ((SingleObservation) observation).getPath().equals(((SingleObservation) obs).getPath());
+                }
+            } else {
+                // LwM2Mデバイスに対する処理
+                return ((SingleObservation) observation).getPath().equals(((SingleObservation) obs).getPath());
+            }
         }
         if (observation instanceof CompositeObservation && obs instanceof CompositeObservation) {
             return ((CompositeObservation) observation).getPaths().equals(((CompositeObservation) obs).getPaths());

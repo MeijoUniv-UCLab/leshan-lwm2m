@@ -20,6 +20,10 @@ import java.util.List;
 
 import javax.net.SocketFactory;
 
+import org.eclipse.leshan.client.endpoint.ClientEndpointToolbox;
+import org.eclipse.leshan.client.notification.NotificationManager;
+import org.eclipse.leshan.client.request.DownlinkRequestReceiver;
+import org.eclipse.leshan.client.resource.LwM2mObjectTree;
 import org.eclipse.leshan.client.servers.ServerInfo;
 import org.eclipse.leshan.core.endpoint.Protocol;
 import org.eclipse.leshan.transport.javacoap.client.endpoint.AbstractJavaCoapClientEndpointsProvider;
@@ -50,5 +54,15 @@ public class JavaCoapTcpClientEndpointsProvider extends AbstractJavaCoapClientEn
                 .outboundFilter(TokenGeneratorFilter.RANDOM)//
                 .route(router) //
                 .build();
+    }
+
+    @Override
+    public void addObjectResourceforGatewayObject(LwM2mObjectTree objectTreeGateway,
+            DownlinkRequestReceiver requestReceiverGateway, NotificationManager notificationManager,
+            ClientEndpointToolbox toolbox, String prefix) {
+    }
+
+    @Override
+    public void notify(String prefix, String object) {
     }
 }

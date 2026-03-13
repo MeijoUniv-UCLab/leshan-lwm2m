@@ -26,7 +26,7 @@ import static org.eclipse.leshan.client.object.Security.rpkBootstrap;
 import static org.eclipse.leshan.client.object.Security.x509;
 import static org.eclipse.leshan.client.object.Security.x509Bootstrap;
 import static org.eclipse.leshan.core.LwM2mId.DEVICE;
-import static org.eclipse.leshan.core.LwM2mId.LOCATION;
+// import static org.eclipse.leshan.core.LwM2mId.LOCATION;
 import static org.eclipse.leshan.core.LwM2mId.OSCORE;
 import static org.eclipse.leshan.core.LwM2mId.SECURITY;
 import static org.eclipse.leshan.core.LwM2mId.SERVER;
@@ -36,6 +36,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.scandium.config.DtlsConfig;
@@ -46,7 +48,7 @@ import org.eclipse.leshan.client.LeshanClientBuilder;
 import org.eclipse.leshan.client.endpoint.LwM2mClientEndpointsProvider;
 import org.eclipse.leshan.client.engine.DefaultClientEndpointNameProvider;
 import org.eclipse.leshan.client.engine.DefaultRegistrationEngineFactory;
-import org.eclipse.leshan.client.object.LwM2mTestObject;
+// import org.eclipse.leshan.client.object.LwM2mTestObject;
 import org.eclipse.leshan.client.object.Oscore;
 import org.eclipse.leshan.client.object.Server;
 import org.eclipse.leshan.client.resource.LwM2mObjectEnabler;
@@ -98,10 +100,12 @@ public class LeshanClientDemo {
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(LeshanClientDemo.class);
-    private static final int OBJECT_ID_TEMPERATURE_SENSOR = 3303;
-    private static final int OBJECT_ID_LWM2M_TEST_OBJECT = 3442;
+    // private static final int OBJECT_ID_TEMPERATURE_SENSOR = 3303;
+    // private static final int OBJECT_ID_LWM2M_TEST_OBJECT = 3442;
     private static final String CF_CONFIGURATION_FILENAME = "Californium3.client.properties";
     private static final String CF_CONFIGURATION_HEADER = "Leshan Client Demo - " + Configuration.DEFAULT_HEADER;
+
+    private static ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
 
@@ -137,8 +141,10 @@ public class LeshanClientDemo {
                 }
             });
 
+            executor.submit(new LegacyDeviceHandler(client, repository));
+
             // Start interactive console
-            console.start();
+            // console.start();
 
         } catch (Exception e) {
 
@@ -165,8 +171,8 @@ public class LeshanClientDemo {
 
     public static LeshanClient createClient(LeshanClientDemoCLI cli, LwM2mModelRepository repository) throws Exception {
         // create Leshan client from command line option
-        final MyLocation locationInstance = new MyLocation(cli.location.position.latitude,
-                cli.location.position.longitude, cli.location.scaleFactor);
+        // final MyLocation locationInstance = new MyLocation(cli.location.position.latitude,
+        // cli.location.position.longitude, cli.location.scaleFactor);
 
         // Initialize object list
         final ObjectsInitializer initializer = new ObjectsInitializer(repository.getLwM2mModel());
@@ -242,10 +248,17 @@ public class LeshanClientDemo {
                         EnumSet.of(serverBindingMode), false, serverBindingMode));
             }
         }
-        initializer.setInstancesForObject(DEVICE, new MyDevice());
-        initializer.setInstancesForObject(LOCATION, locationInstance);
-        initializer.setInstancesForObject(OBJECT_ID_TEMPERATURE_SENSOR, new RandomTemperatureSensor());
-        initializer.setInstancesForObject(OBJECT_ID_LWM2M_TEST_OBJECT, new LwM2mTestObject());
+        // NextGeneration IoTDevice
+        // initializer.setInstancesForObject(DEVICE,
+        // new MyDevice("seeed", "reTerminalCM4104032", "100000000d258cc3", "multiSensor", "meijoUniversity",
+        // "uclab", "desk", "http://192.168.100.59:1880/ui", "uclab-komonguchi"));
+
+        // LwM2M Gateway
+        initializer.setInstancesForObject(DEVICE, new MyDevice("raspberryPi", "raspberryPi4ModelB", "100000000g262cf8",
+                "gateway", "meijoUniversity", "uclab", "desk", "None", "uclab-komonguchi"));
+        // initializer.setInstancesForObject(LOCATION, locationInstance);
+        // initializer.setInstancesForObject(OBJECT_ID_TEMPERATURE_SENSOR, new RandomTemperatureSensor());
+        // initializer.setInstancesForObject(OBJECT_ID_LWM2M_TEST_OBJECT, new LwM2mTestObject());
 
         List<LwM2mObjectEnabler> enablers = initializer.createAll();
 

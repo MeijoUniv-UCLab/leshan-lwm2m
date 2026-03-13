@@ -45,6 +45,7 @@ import org.eclipse.leshan.client.servers.LwM2mServer;
 import org.eclipse.leshan.client.servers.ServerInfo;
 import org.eclipse.leshan.core.SecurityMode;
 import org.eclipse.leshan.core.endpoint.Protocol;
+import org.eclipse.leshan.core.node.LwM2mPath;
 import org.eclipse.leshan.core.peer.IpPeer;
 import org.eclipse.leshan.core.peer.OscoreIdentity;
 import org.eclipse.leshan.core.peer.PskIdentity;
@@ -52,6 +53,7 @@ import org.eclipse.leshan.core.peer.RpkIdentity;
 import org.eclipse.leshan.core.peer.X509Identity;
 import org.eclipse.leshan.core.util.NamedThreadFactory;
 import org.eclipse.leshan.transport.californium.client.endpoint.coap.CoapClientProtocolProvider;
+import org.eclipse.leshan.transport.californium.client.object.ObjectResource;
 import org.eclipse.leshan.transport.californium.identity.IdentityHandler;
 import org.eclipse.leshan.transport.californium.identity.IdentityHandlerProvider;
 import org.slf4j.Logger;
@@ -382,5 +384,58 @@ public class CaliforniumClientEndpointsProvider implements LwM2mClientEndpointsP
             generateDefaultValue();
             return new CaliforniumClientEndpointsProvider(this);
         }
+    }
+
+    // レガシーデバイスのリソースを管理するリソースオブジェクトを追加
+    @Override
+    public void addObjectResourceforGatewayObject(LwM2mObjectTree objectTreeGateway,
+            DownlinkRequestReceiver requestReceiverGateway, NotificationManager notificationManager,
+            ClientEndpointToolbox toolbox, String prefix) {
+        // レガシーデバイスがサポートするオブジェクトのリソースを作成し，リスト化
+        List<Resource> resources = messagetranslator.createResources(coapServer, identityHandlerProvider,
+                identityExtrator, requestReceiverGateway, notificationManager, toolbox, objectTreeGateway);
+        // 上記で作成したレガシーデバイスのリソースを管理するリソースオブジェクトを作成
+        ObjectResource gatewayResource = new ObjectResource(prefix, identityHandlerProvider, identityExtrator,
+                requestReceiverGateway, notificationManager, toolbox);
+        // resourcesをgatewayResourceに追加
+        for (Resource resource : resources) {
+            gatewayResource.add(resource);
+        }
+        // coapServerにgatewayResourceを追加
+        coapServer.add(gatewayResource);
+    }
+
+    // レガシーデバイスに関する情報が変更された場合にサーバに通知する
+    @Override
+    public void notify(String prefix, String object) {
+        // レガシーデバイスのリソースを取得
+        Resource resource = coapServer.getRoot().getChild(prefix);
+        ObjectResource objectResource = (ObjectResource) resource;
+        // レガシーデバイスの情報が変更されたことをサーバへ通知
+        int resourceId = 0;
+        switch (object) {
+        case "3":
+            resourceId = 26;
+            break;
+        case "3301":
+            resourceId = 5700;
+            break;
+        case "3303":
+            resourceId = 5700;
+            break;
+        case "3304":
+            resourceId = 5700;
+            break;
+        case "3315":
+            resourceId = 5700;
+            break;
+        case "3316":
+            resourceId = 5700;
+            break;
+        default:
+            // 未知の値の場合はスキップ
+            return;
+        }
+        objectResource.resourceChanged(new LwM2mPath("/" + prefix + "/" + object + "/0/" + resourceId));
     }
 }
